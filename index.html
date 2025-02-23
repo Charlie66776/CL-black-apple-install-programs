@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>macOS Tools Hub</title>
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --background: #f5f5f7;
+            --text-color: #1d1d1f;
+            --modal-bg: rgba(255,255,255,0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .lang-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: rgba(0,122,255,0.1);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .apple-icon {
+            font-size: 3.5rem;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, var(--primary-color), #00c7ff);
+            color: white;
+            padding: 1.2rem 2.5rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 1rem;
+            box-shadow: 0 4px 15px rgba(0,122,255,0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,122,255,0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) perspective(1000px) rotateX(10deg) translateZ(50px);
+            background: var(--modal-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.active {
+            transform: translate(-50%, -50%) perspective(1000px) rotateX(0) translateZ(0);
+        }
+
+        .version-btn {
+            background: #f0f0f0;
+            color: #333;
+            padding: 0.8rem 1.5rem;
+            margin: 0.5rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .version-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .secondary-btn {
+            background: none;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switcher">
+        <button class="lang-btn active" onclick="switchLanguage('zh')">中文</button>
+        <button class="lang-btn" onclick="switchLanguage('en')">English</button>
+    </div>
+
+    <div class="container">
+        <span class="apple-icon"></span>
+        <h1 data-lang="zh">macOS 工具下载中心</h1>
+        <h1 data-lang="en" style="display:none">macOS Tools Download Center</h1>
+        
+        <button class="download-btn" onclick="showModal()">
+            <span data-lang="zh">下载最新版 (v4.3)</span>
+            <span data-lang="en" style="display:none">Download Latest (v4.3)</span>
+        </button>
+        <br>
+        <button class="download-btn secondary-btn" onclick="toggleVersions()">
+            <span data-lang="zh">其他版本</span>
+            <span data-lang="en" style="display:none">Other Versions</span>
+        </button>
+
+        <div id="otherVersions" style="display: none;">
+            <button class="version-btn" onclick="downloadVersion('4.2')">
+                <span data-lang="zh">下载 v4.2</span>
+                <span data-lang="en" style="display:none">Download v4.2</span>
+            </button>
+            <button class="version-btn" onclick="downloadVersion('4.1')">
+                <span data-lang="zh">下载 v4.1</span>
+                <span data-lang="en" style="display:none">Download v4.1</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="downloadModal" class="modal">
+        <h2 style="margin-bottom: 1rem; color: var(--text-color);" data-lang="zh">正在准备下载...</h2>
+        <h2 style="margin-bottom: 1rem; color: var(--text-color); display:none;" data-lang="en">Preparing download...</h2>
+        <div class="loader"></div>
+        <p style="color: #666; margin-top: 1rem;" data-lang="zh">请稍候，下载即将开始</p>
+        <p style="color: #666; margin-top: 1rem; display:none;" data-lang="en">Please wait, download will start soon</p>
+    </div>
+
+    <script>
+        // 语言切换功能
+        function switchLanguage(lang) {
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                el.style.display = el.dataset.lang === lang ? 'block' : 'none'
+            });
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === (lang === 'zh' ? '中文' : 'English'))
+            });
+        }
+
+        // 下载功能
+        function showModal() {
+            const modal = document.getElementById('downloadModal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('active'), 10);
+            
+            setTimeout(() => {
+                window.location.href = 'https://www.123865.com/s/rxOojv-ujWEd';
+            }, 2000);
+        }
+
+        function toggleVersions() {
+            const versions = document.getElementById('otherVersions');
+            versions.style.display = versions.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function downloadVersion(version) {
+            let url = '';
+            switch(version) {
+                case '4.2':
+                    url = 'https://www.123865.com/s/rxOojv-JjWEd';
+                    break;
+                case '4.1':
+                    url = 'https://www.123865.com/s/rxOojv-unWEd';
+                    break;
+            }
+            window.location.href = url;
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('downloadModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 500);
+            }
+        }
+    </script>
+</body>
+</html>
